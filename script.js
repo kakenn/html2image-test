@@ -27,24 +27,39 @@ const escapeXml = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 
-const svgToImage = (svgMarkup) =>
+const svgMarkupToDataUrl = (svgMarkup) =>
   new Promise((resolve, reject) => {
+    const reader = new FileReader();
     const blob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
-    const blobUrl = URL.createObjectURL(blob);
+
+    reader.onload = () => {
+      resolve(reader.result);
+    };
+
+    reader.onerror = () => {
+      reject(new Error("SVG データ URL の生成に失敗しました"));
+    };
+
+    reader.readAsDataURL(blob);
+  });
+
+const svgToImage = async (svgMarkup) => {
+  const dataUrl = await svgMarkupToDataUrl(svgMarkup);
+
+  return new Promise((resolve, reject) => {
     const image = new Image();
 
     image.onload = () => {
-      URL.revokeObjectURL(blobUrl);
       resolve(image);
     };
 
     image.onerror = () => {
-      URL.revokeObjectURL(blobUrl);
       reject(new Error("SVG の読み込みに失敗しました"));
     };
 
-    image.src = blobUrl;
+    image.src = dataUrl;
   });
+};
 
 async function renderHtmlToImage() {
   const markup = htmlInput.value.trim();
@@ -101,27 +116,35 @@ async function renderHtmlToImage() {
       URL.revokeObjectURL(latestPngUrl);
     }
 
-    const pngBlob = await new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) {
-          resolve(blob);
-          return;
-        }
-        reject(new Error("PNG 生成に失敗しました"));
-      }, "image/png");
-    });
+        const pngBlob = await new Promise((resolve, reject) => {
+          try {
+            canvas.toBlob((blob) => {
+              if (blob) {
+                resolve(blob);
+                return;
+              }
+              reject(new Error("PNG 生成に失敗しました"));
+            }, "image/png");
+          } catch (error) {
+            reject(error);
+          }
+        });
 
     latestPngUrl = URL.createObjectURL(pngBlob);
     pngOutput.src = latestPngUrl;
     downloadLink.href = latestPngUrl;
     downloadButton.disabled = false;
     setStatus(`生成完了: ${width}x${height} / scale ${scale}`);
-  } catch (error) {
-    console.error(error);
-    setStatus(error.message || "変換に失敗しました", true);
-  } finally {
-    renderButton.disabled = false;
-  }
+      } catch (error) {
+        console.error(error);
+        if (error instanceof DOMException && error.name === "SecurityError") {
+          setStatus("canvas が汚染されました。外部画像・外部フォント・一部ブラウザの foreignObject 制約を確認してください", true);
+        } else {
+          setStatus(error.message || "変換に失敗しました", true);
+        }
+      } finally {
+        renderButton.disabled = false;
+      }
 }
 
 renderButton.addEventListener("click", () => {
