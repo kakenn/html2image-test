@@ -208,7 +208,6 @@ const updateHtmlPreview = (markup, width, height, background) => {
     const stage = htmlPreviewShell.parentElement;
     const scale = Math.min(stage.clientWidth / width, 1);
     htmlPreviewShell.style.transform = `scale(${scale})`;
-    stage.style.minHeight = `${Math.max(height * scale + 24, 180)}px`;
   });
 };
 
