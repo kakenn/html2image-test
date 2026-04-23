@@ -12,9 +12,16 @@ const downloadLink = document.getElementById("downloadLink");
 const htmlPreview = document.getElementById("htmlPreview");
 const htmlPreviewShell = document.getElementById("htmlPreviewShell");
 const measureSurface = document.getElementById("measureSurface");
+const safariWarning = document.getElementById("safariWarning");
 
 let latestPngUrl = "";
 let lastRenderedSize = { width: 0, height: 0 };
+
+const isSafariBrowser = () => {
+  const ua = navigator.userAgent;
+  return /Safari/i.test(ua) &&
+    !/Chrome|Chromium|CriOS|Edg|OPR|Android/i.test(ua);
+};
 
 const sampleDefinitions = {
   simple: `<div style="width:100%;min-height:630px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f766e 0%,#f59e0b 100%);color:white;font-family:'Hiragino Sans','Yu Gothic',sans-serif;">
@@ -325,4 +332,5 @@ window.addEventListener("resize", () => {
 });
 
 loadSelectedSample();
+safariWarning.classList.toggle("is-visible", isSafariBrowser());
 renderHtmlToImage();

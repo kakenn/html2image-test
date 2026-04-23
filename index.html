@@ -40,6 +40,19 @@
       padding: 16px;
     }
 
+    .warning-bar {
+      display: none;
+      padding: 12px 16px;
+      background: #b91c1c;
+      color: #fff;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+
+    .warning-bar.is-visible {
+      display: block;
+    }
+
     h1,
     h2 {
       margin: 0;
@@ -227,6 +240,10 @@
 </head>
 <body>
   <main>
+    <div id="safariWarning" class="warning-bar">
+      Safari には対応していません。Chrome 系ブラウザで開いてください。
+    </div>
+
     <section class="panel">
       <h1>HTML to Image</h1>
       <p>HTML を入力すると、そのままの HTML プレビューと画像化した結果を並べて確認できます。</p>
