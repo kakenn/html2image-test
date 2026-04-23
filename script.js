@@ -1,5 +1,6 @@
 const sampleSelect = document.getElementById("sampleSelect");
 const htmlInput = document.getElementById("htmlInput");
+const cssUrlInput = document.getElementById("cssUrlInput");
 const widthInput = document.getElementById("widthInput");
 const backgroundInput = document.getElementById("backgroundInput");
 const renderButton = document.getElementById("renderButton");
@@ -16,6 +17,7 @@ const safariWarning = document.getElementById("safariWarning");
 
 let latestPngUrl = "";
 let lastRenderedSize = { width: 0, height: 0 };
+let lastResolvedCssText = "";
 
 const isSafariBrowser = () => {
   const ua = navigator.userAgent;
@@ -171,6 +173,20 @@ const escapeXml = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 
+const getCssUrls = () =>
+  cssUrlInput.value
+    .split("\n")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+const buildStyledMarkup = (markup, cssText) => {
+  if (!cssText) {
+    return markup;
+  }
+
+  return `<style>${cssText}</style>${markup}`;
+};
+
 const svgMarkupToDataUrl = (svgMarkup) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -191,6 +207,41 @@ const svgToImage = async (svgMarkup) => {
     image.onerror = () => reject(new Error("SVG の読み込みに失敗しました"));
     image.src = dataUrl;
   });
+};
+
+const loadExternalCssText = async (cssUrls) => {
+  if (cssUrls.length === 0) {
+    return { cssText: "", failedUrls: [] };
+  }
+
+  const results = await Promise.all(
+    cssUrls.map(async (url) => {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        return {
+          ok: true,
+          url,
+          text: await response.text()
+        };
+      } catch (error) {
+        console.error(`Failed to load CSS: ${url}`, error);
+        return {
+          ok: false,
+          url,
+          text: ""
+        };
+      }
+    })
+  );
+
+  return {
+    cssText: results.filter((result) => result.ok).map((result) => result.text).join("\n"),
+    failedUrls: results.filter((result) => !result.ok).map((result) => result.url)
+  };
 };
 
 const measureMarkupHeight = async (markup, width, background) => {
@@ -222,6 +273,7 @@ async function renderHtmlToImage() {
   const markup = htmlInput.value.trim();
   const width = Number(widthInput.value);
   const background = backgroundInput.value.trim() || "transparent";
+  const cssUrls = getCssUrls();
 
   if (!markup) {
     setStatus("HTML を入力してください", true);
@@ -238,14 +290,16 @@ async function renderHtmlToImage() {
   setStatus("更新中...");
 
   try {
-    const height = await measureMarkupHeight(markup, width, background);
-    updateHtmlPreview(markup, width, height, background);
+    const { cssText, failedUrls } = await loadExternalCssText(cssUrls);
+    const styledMarkup = buildStyledMarkup(markup, cssText);
+    const height = await measureMarkupHeight(styledMarkup, width, background);
+    updateHtmlPreview(styledMarkup, width, height, background);
 
     const svgMarkup = [
       `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
       `<foreignObject width="100%" height="100%">`,
       `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden;background:${escapeXml(background)};">`,
-      markup,
+      styledMarkup,
       `</div>`,
       `</foreignObject>`,
       `</svg>`
@@ -284,11 +338,16 @@ async function renderHtmlToImage() {
 
     latestPngUrl = URL.createObjectURL(pngBlob);
     lastRenderedSize = { width, height };
+    lastResolvedCssText = cssText;
     pngOutput.src = latestPngUrl;
     downloadLink.href = latestPngUrl;
     downloadLink.download = getDownloadFileName();
     downloadButton.disabled = false;
-    setStatus(`更新完了: ${width}x${height}`);
+    if (failedUrls.length > 0) {
+      setStatus(`更新完了: ${width}x${height} / CSS 読み込み失敗: ${failedUrls.join(", ")}`, true);
+    } else {
+      setStatus(`更新完了: ${width}x${height}`);
+    }
   } catch (error) {
     console.error(error);
     if (error instanceof DOMException && error.name === "SecurityError") {
@@ -327,7 +386,12 @@ window.addEventListener("resize", () => {
   const background = backgroundInput.value.trim() || "transparent";
 
   if (Number.isFinite(width) && width > 0 && lastRenderedSize.height > 0) {
-    updateHtmlPreview(htmlInput.value, width, lastRenderedSize.height, background);
+    updateHtmlPreview(
+      buildStyledMarkup(htmlInput.value, lastResolvedCssText),
+      width,
+      lastRenderedSize.height,
+      background
+    );
   }
 });
 

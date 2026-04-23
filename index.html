@@ -102,6 +102,10 @@
       resize: vertical;
     }
 
+    .css-input {
+      min-height: 96px;
+    }
+
     input,
     select {
       padding: 10px 12px;
@@ -269,6 +273,16 @@
     <p style="margin:0;font-size:18px;opacity:.92;">HTML preview と image preview を並べて確認</p>
   </div>
 </div></textarea>
+      </label>
+
+      <label for="cssUrlInput">
+        External CSS URLs
+        <textarea
+          id="cssUrlInput"
+          class="css-input"
+          spellcheck="false"
+          placeholder="https://example.com/style.css&#10;./styles/article.css"
+        ></textarea>
       </label>
 
       <div class="row">
