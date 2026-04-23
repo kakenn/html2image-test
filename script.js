@@ -17,6 +17,7 @@ const safariWarning = document.getElementById("safariWarning");
 
 let latestPngUrl = "";
 let lastRenderedSize = { width: 0, height: 0 };
+let activeRenderId = 0;
 
 const isSafariBrowser = () => {
   const ua = navigator.userAgent;
@@ -182,6 +183,17 @@ const buildStyledMarkup = (markup, cssText) => {
   return `<style>${cssText}</style>${markup}`;
 };
 
+const normalizeMarkupForSvg = (markup) =>
+  markup.replace(
+    /<(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)\b([^>]*)>/gi,
+    (match, tagName, attrs) => {
+      if (/\/>\s*$/.test(match)) {
+        return match;
+      }
+      return `<${tagName}${attrs} />`;
+    }
+  );
+
 const svgMarkupToDataUrl = (svgMarkup) =>
   new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -230,6 +242,7 @@ const updateHtmlPreview = (markup, width, height, background) => {
 };
 
 async function renderHtmlToImage() {
+  const renderId = ++activeRenderId;
   const markup = htmlInput.value.trim();
   const width = Number(widthInput.value);
   const background = backgroundInput.value.trim() || "transparent";
@@ -250,7 +263,7 @@ async function renderHtmlToImage() {
   setStatus("更新中...");
 
   try {
-    const styledMarkup = buildStyledMarkup(markup, cssText);
+    const styledMarkup = normalizeMarkupForSvg(buildStyledMarkup(markup, cssText));
     const height = await measureMarkupHeight(styledMarkup, width, background);
     updateHtmlPreview(styledMarkup, width, height, background);
 
@@ -265,6 +278,9 @@ async function renderHtmlToImage() {
     ].join("");
 
     const image = await svgToImage(svgMarkup);
+    if (renderId !== activeRenderId) {
+      return;
+    }
     canvas.width = width;
     canvas.height = height;
 
@@ -294,6 +310,9 @@ async function renderHtmlToImage() {
         reject(error);
       }
     });
+    if (renderId !== activeRenderId) {
+      return;
+    }
 
     latestPngUrl = URL.createObjectURL(pngBlob);
     lastRenderedSize = { width, height };
@@ -303,6 +322,9 @@ async function renderHtmlToImage() {
     downloadButton.disabled = false;
     setStatus(`更新完了: ${width}x${height}`);
   } catch (error) {
+    if (renderId !== activeRenderId) {
+      return;
+    }
     console.error(error);
     if (error instanceof DOMException && error.name === "SecurityError") {
       setStatus("canvas が汚染されました。外部画像・外部フォント・foreignObject 制約を確認してください", true);
@@ -310,7 +332,9 @@ async function renderHtmlToImage() {
       setStatus(error.message || "変換に失敗しました", true);
     }
   } finally {
-    renderButton.disabled = false;
+    if (renderId === activeRenderId) {
+      renderButton.disabled = false;
+    }
   }
 }
 
