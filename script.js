@@ -2,7 +2,6 @@ const sampleMarkup = document.getElementById("htmlInput").value;
 const htmlInput = document.getElementById("htmlInput");
 const widthInput = document.getElementById("widthInput");
 const heightInput = document.getElementById("heightInput");
-const scaleInput = document.getElementById("scaleInput");
 const backgroundInput = document.getElementById("backgroundInput");
 const renderButton = document.getElementById("renderButton");
 const sampleButton = document.getElementById("sampleButton");
@@ -11,12 +10,14 @@ const status = document.getElementById("status");
 const canvas = document.getElementById("previewCanvas");
 const pngOutput = document.getElementById("pngOutput");
 const downloadLink = document.getElementById("downloadLink");
+const htmlPreview = document.getElementById("htmlPreview");
+const htmlPreviewShell = document.getElementById("htmlPreviewShell");
 
 let latestPngUrl = "";
 
 const setStatus = (message, isError = false) => {
   status.textContent = message;
-  status.style.color = isError ? "#b91c1c" : "";
+  status.classList.toggle("error", isError);
 };
 
 const escapeXml = (value) =>
@@ -32,14 +33,8 @@ const svgMarkupToDataUrl = (svgMarkup) =>
     const reader = new FileReader();
     const blob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
 
-    reader.onload = () => {
-      resolve(reader.result);
-    };
-
-    reader.onerror = () => {
-      reject(new Error("SVG データ URL の生成に失敗しました"));
-    };
-
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("SVG データ URL の生成に失敗しました"));
     reader.readAsDataURL(blob);
   });
 
@@ -49,15 +44,25 @@ const svgToImage = async (svgMarkup) => {
   return new Promise((resolve, reject) => {
     const image = new Image();
 
-    image.onload = () => {
-      resolve(image);
-    };
-
-    image.onerror = () => {
-      reject(new Error("SVG の読み込みに失敗しました"));
-    };
-
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("SVG の読み込みに失敗しました"));
     image.src = dataUrl;
+  });
+};
+
+const updateHtmlPreview = (markup, width, height, background) => {
+  htmlPreviewShell.style.width = `${width}px`;
+  htmlPreviewShell.style.height = `${height}px`;
+  htmlPreview.style.width = `${width}px`;
+  htmlPreview.style.height = `${height}px`;
+  htmlPreview.style.background = background;
+  htmlPreview.innerHTML = markup;
+
+  requestAnimationFrame(() => {
+    const stage = htmlPreviewShell.parentElement;
+    const scale = Math.min(stage.clientWidth / width, 1);
+    htmlPreviewShell.style.transform = `scale(${scale})`;
+    stage.style.minHeight = `${Math.max(height * scale + 24, 180)}px`;
   });
 };
 
@@ -65,7 +70,6 @@ async function renderHtmlToImage() {
   const markup = htmlInput.value.trim();
   const width = Number(widthInput.value);
   const height = Number(heightInput.value);
-  const scale = Number(scaleInput.value);
   const background = backgroundInput.value.trim() || "transparent";
 
   if (!markup) {
@@ -78,16 +82,13 @@ async function renderHtmlToImage() {
     return;
   }
 
-  if (!Number.isFinite(scale) || scale < 1 || scale > 4) {
-    setStatus("scale は 1 から 4 の範囲で指定してください", true);
-    return;
-  }
-
   renderButton.disabled = true;
   downloadButton.disabled = true;
-  setStatus("変換中...");
+  setStatus("更新中...");
 
   try {
+    updateHtmlPreview(markup, width, height, background);
+
     const svgMarkup = [
       `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
       `<foreignObject width="100%" height="100%">`,
@@ -99,12 +100,11 @@ async function renderHtmlToImage() {
     ].join("");
 
     const image = await svgToImage(svgMarkup);
-    canvas.width = width * scale;
-    canvas.height = height * scale;
-    canvas.style.aspectRatio = `${width} / ${height}`;
+    canvas.width = width;
+    canvas.height = height;
 
     const context = canvas.getContext("2d");
-    context.setTransform(scale, 0, 0, scale, 0, 0);
+    context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, width, height);
     if (background !== "transparent") {
       context.fillStyle = background;
@@ -116,35 +116,35 @@ async function renderHtmlToImage() {
       URL.revokeObjectURL(latestPngUrl);
     }
 
-        const pngBlob = await new Promise((resolve, reject) => {
-          try {
-            canvas.toBlob((blob) => {
-              if (blob) {
-                resolve(blob);
-                return;
-              }
-              reject(new Error("PNG 生成に失敗しました"));
-            }, "image/png");
-          } catch (error) {
-            reject(error);
+    const pngBlob = await new Promise((resolve, reject) => {
+      try {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+            return;
           }
-        });
+          reject(new Error("PNG 生成に失敗しました"));
+        }, "image/png");
+      } catch (error) {
+        reject(error);
+      }
+    });
 
     latestPngUrl = URL.createObjectURL(pngBlob);
     pngOutput.src = latestPngUrl;
     downloadLink.href = latestPngUrl;
     downloadButton.disabled = false;
-    setStatus(`生成完了: ${width}x${height} / scale ${scale}`);
-      } catch (error) {
-        console.error(error);
-        if (error instanceof DOMException && error.name === "SecurityError") {
-          setStatus("canvas が汚染されました。外部画像・外部フォント・一部ブラウザの foreignObject 制約を確認してください", true);
-        } else {
-          setStatus(error.message || "変換に失敗しました", true);
-        }
-      } finally {
-        renderButton.disabled = false;
-      }
+    setStatus(`更新完了: ${width}x${height}`);
+  } catch (error) {
+    console.error(error);
+    if (error instanceof DOMException && error.name === "SecurityError") {
+      setStatus("canvas が汚染されました。外部画像・外部フォント・foreignObject 制約を確認してください", true);
+    } else {
+      setStatus(error.message || "変換に失敗しました", true);
+    }
+  } finally {
+    renderButton.disabled = false;
+  }
 }
 
 renderButton.addEventListener("click", () => {
@@ -153,14 +153,23 @@ renderButton.addEventListener("click", () => {
 
 sampleButton.addEventListener("click", () => {
   htmlInput.value = sampleMarkup;
-  setStatus("サンプル HTML を復元しました");
+  renderHtmlToImage();
 });
 
 downloadButton.addEventListener("click", () => {
-  if (!latestPngUrl) {
-    return;
+  if (latestPngUrl) {
+    downloadLink.click();
   }
-  downloadLink.click();
+});
+
+window.addEventListener("resize", () => {
+  const width = Number(widthInput.value);
+  const height = Number(heightInput.value);
+  const background = backgroundInput.value.trim() || "transparent";
+
+  if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+    updateHtmlPreview(htmlInput.value, width, height, background);
+  }
 });
 
 renderHtmlToImage();

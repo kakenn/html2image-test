@@ -6,16 +6,13 @@
   <title>HTML to Image Playground</title>
   <style>
     :root {
-      color-scheme: light;
-      --bg: #f3efe6;
-      --panel: rgba(255, 252, 245, 0.92);
-      --panel-border: rgba(33, 28, 20, 0.12);
-      --text: #1e1b16;
-      --muted: #655d51;
+      --bg: #f7f7f5;
+      --panel: #ffffff;
+      --border: #d9d9d4;
+      --text: #1e1e1c;
+      --muted: #6a6a62;
       --accent: #0f766e;
-      --accent-strong: #115e59;
-      --shadow: 0 24px 50px rgba(45, 32, 11, 0.12);
-      --radius: 22px;
+      --danger: #b91c1c;
     }
 
     * {
@@ -24,64 +21,42 @@
 
     body {
       margin: 0;
-      min-height: 100vh;
-      font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+      background: var(--bg);
       color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(217, 119, 6, 0.14), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.16), transparent 32%),
-        linear-gradient(180deg, #f8f4ea 0%, var(--bg) 100%);
+      font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
     }
 
-    .shell {
-      width: min(1280px, calc(100vw - 32px));
-      margin: 24px auto;
+    main {
+      width: min(1120px, calc(100vw - 32px));
+      margin: 24px auto 40px;
       display: grid;
-      gap: 20px;
+      gap: 16px;
     }
 
-    .hero,
     .panel {
       background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
     }
 
-    .hero {
-      padding: 28px;
-    }
-
-    .hero h1 {
-      margin: 0 0 8px;
-      font-size: clamp(2rem, 3vw, 3.4rem);
-      line-height: 1;
-      letter-spacing: -0.04em;
-    }
-
-    .hero p {
+    h1,
+    h2 {
       margin: 0;
-      max-width: 780px;
-      color: var(--muted);
-      line-height: 1.7;
     }
 
-    .workspace {
-      display: grid;
-      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
-      gap: 20px;
+    h1 {
+      font-size: 1.8rem;
     }
 
-    .panel {
-      padding: 18px;
-    }
-
-    .panel h2 {
-      margin: 0 0 12px;
+    h2 {
       font-size: 1rem;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+    }
+
+    p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.6;
     }
 
     .controls {
@@ -89,240 +64,214 @@
       gap: 12px;
     }
 
-    .row {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
     label {
       display: grid;
       gap: 6px;
-      font-size: 0.92rem;
       color: var(--muted);
+      font-size: 0.92rem;
     }
 
     textarea,
     input {
       width: 100%;
-      border: 1px solid rgba(30, 27, 22, 0.16);
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
       color: var(--text);
       font: inherit;
     }
 
     textarea {
-      min-height: 420px;
-      resize: vertical;
-      padding: 16px;
+      min-height: 280px;
+      padding: 14px;
       line-height: 1.6;
+      resize: vertical;
     }
 
     input {
-      padding: 12px 14px;
+      padding: 10px 12px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
     }
 
     .actions {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
+      align-items: center;
     }
 
     button {
       appearance: none;
       border: 0;
       border-radius: 999px;
-      padding: 12px 18px;
+      padding: 10px 16px;
       font: inherit;
       font-weight: 700;
       cursor: pointer;
-      transition: transform 120ms ease, opacity 120ms ease, background 120ms ease;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
     }
 
     button:disabled {
       opacity: 0.45;
       cursor: wait;
-      transform: none;
     }
 
     .primary {
-      color: white;
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+      background: var(--accent);
+      color: #fff;
     }
 
     .secondary {
+      background: #ededea;
       color: var(--text);
-      background: rgba(30, 27, 22, 0.08);
     }
 
-    .viewer {
-      display: grid;
-      gap: 16px;
+    .status {
+      min-height: 1.4em;
+      color: var(--muted);
+      font-size: 0.95rem;
     }
 
-    .output-grid {
+    .status.error {
+      color: var(--danger);
+    }
+
+    .preview-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
     }
 
-    .stage {
-      border-radius: 18px;
-      border: 1px solid rgba(30, 27, 22, 0.12);
+    .preview-card {
+      display: grid;
+      gap: 10px;
+    }
+
+    .preview-stage {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
       background:
-        linear-gradient(45deg, rgba(17, 24, 39, 0.04) 25%, transparent 25%),
-        linear-gradient(-45deg, rgba(17, 24, 39, 0.04) 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, rgba(17, 24, 39, 0.04) 75%),
-        linear-gradient(-45deg, transparent 75%, rgba(17, 24, 39, 0.04) 75%);
-      background-size: 22px 22px;
-      background-position: 0 0, 0 11px, 11px -11px, -11px 0;
-      padding: 16px;
-      min-height: 360px;
+        linear-gradient(45deg, rgba(0, 0, 0, 0.03) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(0, 0, 0, 0.03) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(0, 0, 0, 0.03) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(0, 0, 0, 0.03) 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+      overflow: auto;
     }
 
-    .stage h3 {
-      margin: 0 0 10px;
-      font-size: 0.9rem;
-      color: var(--muted);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+    .preview-shell {
+      display: inline-block;
+      transform-origin: top left;
     }
 
-    canvas,
+    .preview-surface,
     .image-output {
+      display: block;
       width: 100%;
       max-width: 100%;
-      display: block;
-      border-radius: 12px;
-      background: white;
-      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .preview-surface {
+      min-height: 120px;
+    }
+
+    .preview-surface > * {
+      max-width: 100%;
     }
 
     .image-output {
-      min-height: 200px;
       object-fit: contain;
     }
 
-    .status {
-      min-height: 1.5em;
-      font-size: 0.95rem;
-      color: var(--muted);
-    }
-
-    .tips {
-      margin: 0;
-      padding-left: 1.2rem;
-      color: var(--muted);
-      line-height: 1.7;
-    }
-
-    .hidden {
+    .hidden-canvas {
       position: absolute;
       width: 1px;
       height: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
     }
 
-    @media (max-width: 960px) {
-      .workspace,
-      .output-grid,
-      .row {
+    @media (max-width: 900px) {
+      .row,
+      .preview-grid {
         grid-template-columns: 1fr;
-      }
-
-      textarea {
-        min-height: 320px;
       }
     }
   </style>
 </head>
 <body>
-  <main class="shell">
-    <section class="hero">
+  <main>
+    <section class="panel">
       <h1>HTML to Image</h1>
-      <p>
-        `textarea` に HTML を貼り付けて、ブラウザだけで `canvas` 描画と PNG 化まで行う単一ページです。
-        外部ライブラリは使わず、GitHub Pages にそのまま配置できます。
-      </p>
+      <p>HTML を入力すると、そのままの HTML プレビューと画像化した結果を並べて確認できます。</p>
     </section>
 
-    <section class="workspace">
-      <section class="panel">
-        <h2>Input</h2>
-        <div class="controls">
-          <label for="htmlInput">
-            HTML
-            <textarea id="htmlInput" spellcheck="false"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f766e 0%,#f59e0b 100%);color:white;font-family:'Hiragino Sans','Yu Gothic',sans-serif;">
-  <div style="padding:36px 44px;border:1px solid rgba(255,255,255,.35);border-radius:28px;background:rgba(255,255,255,.12);box-shadow:0 18px 50px rgba(0,0,0,.18);backdrop-filter:blur(8px);text-align:center;">
+    <section class="panel controls">
+      <label for="htmlInput">
+        HTML
+        <textarea id="htmlInput" spellcheck="false"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f766e 0%,#f59e0b 100%);color:white;font-family:'Hiragino Sans','Yu Gothic',sans-serif;">
+  <div style="padding:36px 44px;border:1px solid rgba(255,255,255,.35);border-radius:28px;background:rgba(255,255,255,.12);box-shadow:0 18px 50px rgba(0,0,0,.18);text-align:center;">
     <div style="font-size:14px;letter-spacing:.24em;text-transform:uppercase;opacity:.85;">Client-side only</div>
-    <h1 style="margin:12px 0 8px;font-size:44px;line-height:1;">HTML → Canvas → PNG</h1>
-    <p style="margin:0;font-size:18px;opacity:.92;">GitHub Pages にそのまま置けるサンプル</p>
+    <h1 style="margin:12px 0 8px;font-size:44px;line-height:1;">HTML → Image</h1>
+    <p style="margin:0;font-size:18px;opacity:.92;">HTML preview と image preview を並べて確認</p>
   </div>
 </div></textarea>
-          </label>
+      </label>
 
-          <div class="row">
-            <label for="widthInput">
-              Width
-              <input id="widthInput" type="number" min="1" value="1200">
-            </label>
-            <label for="heightInput">
-              Height
-              <input id="heightInput" type="number" min="1" value="630">
-            </label>
+      <div class="row">
+        <label for="widthInput">
+          Width
+          <input id="widthInput" type="number" min="1" value="1200">
+        </label>
+        <label for="heightInput">
+          Height
+          <input id="heightInput" type="number" min="1" value="630">
+        </label>
+        <label for="backgroundInput">
+          Background
+          <input id="backgroundInput" type="text" value="#ffffff">
+        </label>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="renderButton">更新する</button>
+        <button class="secondary" id="sampleButton">サンプルに戻す</button>
+        <button class="secondary" id="downloadButton" disabled>PNG を保存</button>
+      </div>
+
+      <div id="status" class="status">準備完了</div>
+    </section>
+
+    <section class="panel preview-grid">
+      <article class="preview-card">
+        <h2>HTML Preview</h2>
+        <div class="preview-stage">
+          <div id="htmlPreviewShell" class="preview-shell">
+            <div id="htmlPreview" class="preview-surface"></div>
           </div>
-
-          <div class="row">
-            <label for="scaleInput">
-              Scale
-              <input id="scaleInput" type="number" min="1" max="4" step="1" value="2">
-            </label>
-            <label for="backgroundInput">
-              Background
-              <input id="backgroundInput" type="text" value="#ffffff">
-            </label>
-          </div>
-
-          <div class="actions">
-            <button class="primary" id="renderButton">画像化する</button>
-            <button class="secondary" id="sampleButton">サンプルに戻す</button>
-            <button class="secondary" id="downloadButton" disabled>PNG を保存</button>
-          </div>
-
-          <div id="status" class="status">準備完了</div>
         </div>
-      </section>
+      </article>
 
-      <section class="panel viewer">
-        <h2>Output</h2>
-        <div class="output-grid">
-          <article class="stage">
-            <h3>Canvas</h3>
-            <canvas id="previewCanvas" width="1200" height="630"></canvas>
-          </article>
-          <article class="stage">
-            <h3>PNG Preview</h3>
-            <img id="pngOutput" class="image-output" alt="生成されたPNGプレビュー">
-          </article>
+      <article class="preview-card">
+        <h2>Image Preview</h2>
+        <div class="preview-stage">
+          <img id="pngOutput" class="image-output" alt="生成されたPNGプレビュー">
         </div>
-
-        <ul class="tips">
-          <li>入力 HTML はインライン CSS 前提です。</li>
-          <li>外部画像や外部フォントは CORS 制約で失敗する場合があります。</li>
-          <li>Safari など一部環境では `foreignObject` の制約で描画差異が出ます。GitHub Pages 上では Chrome 系ブラウザ想定が安定です。</li>
-        </ul>
-      </section>
+      </article>
     </section>
   </main>
 
-  <a id="downloadLink" class="hidden" download="html-image.png">download</a>
+  <canvas id="previewCanvas" class="hidden-canvas" width="1200" height="630"></canvas>
+  <a id="downloadLink" download="html-image.png" hidden>download</a>
 
   <script src="./script.js"></script>
 </body>
