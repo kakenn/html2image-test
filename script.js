@@ -26,14 +26,14 @@ const isSafariBrowser = () => {
 };
 
 const sampleDefinitions = {
-  simple: `<div style="width:100%;min-height:630px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f766e 0%,#f59e0b 100%);color:white;font-family:'Hiragino Sans','Yu Gothic',sans-serif;">
+  simple: `<div style="width:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f766e 0%,#f59e0b 100%);color:white;font-family:'Hiragino Sans','Yu Gothic',sans-serif;">
   <div style="padding:36px 44px;border:1px solid rgba(255,255,255,.35);border-radius:28px;background:rgba(255,255,255,.12);box-shadow:0 18px 50px rgba(0,0,0,.18);text-align:center;">
     <div style="font-size:14px;letter-spacing:.24em;text-transform:uppercase;opacity:.85;">Client-side only</div>
     <h1 style="margin:12px 0 8px;font-size:44px;line-height:1;">HTML → Image</h1>
     <p style="margin:0;font-size:18px;opacity:.92;">HTML preview と image preview を並べて確認</p>
   </div>
 </div>`,
-  game_notice_stable: `<div style="width:100%;min-height:630px;padding:36px;background:linear-gradient(135deg,#111827 0%,#1d4ed8 55%,#0f766e 100%);color:#fff;font-family:'Hiragino Sans','Yu Gothic',sans-serif;box-sizing:border-box;">
+  game_notice_stable: `<div style="width:100%;padding:36px;background:linear-gradient(135deg,#111827 0%,#1d4ed8 55%,#0f766e 100%);color:#fff;font-family:'Hiragino Sans','Yu Gothic',sans-serif;box-sizing:border-box;">
   <div style="padding:34px;border-radius:30px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);box-shadow:0 20px 50px rgba(0,0,0,.22);">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;">
       <div>
@@ -78,7 +78,7 @@ const sampleDefinitions = {
     </div>
   </div>
 </div>`,
-  game_notice_stress: `<div style="position:relative;width:100%;min-height:630px;overflow:hidden;background:
+  game_notice_stress: `<div style="position:relative;width:100%;overflow:hidden;background:
 radial-gradient(circle at 20% 30%, rgba(59,130,246,.9), transparent 28%),
 radial-gradient(circle at 80% 20%, rgba(236,72,153,.85), transparent 24%),
 radial-gradient(circle at 60% 80%, rgba(34,197,94,.8), transparent 26%),
