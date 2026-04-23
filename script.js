@@ -1,6 +1,6 @@
 const sampleSelect = document.getElementById("sampleSelect");
 const htmlInput = document.getElementById("htmlInput");
-const cssUrlInput = document.getElementById("cssUrlInput");
+const cssInput = document.getElementById("cssInput");
 const widthInput = document.getElementById("widthInput");
 const backgroundInput = document.getElementById("backgroundInput");
 const renderButton = document.getElementById("renderButton");
@@ -17,7 +17,6 @@ const safariWarning = document.getElementById("safariWarning");
 
 let latestPngUrl = "";
 let lastRenderedSize = { width: 0, height: 0 };
-let lastResolvedCssText = "";
 
 const isSafariBrowser = () => {
   const ua = navigator.userAgent;
@@ -173,11 +172,7 @@ const escapeXml = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 
-const getCssUrls = () =>
-  cssUrlInput.value
-    .split("\n")
-    .map((value) => value.trim())
-    .filter(Boolean);
+const getCssText = () => cssInput.value.trim();
 
 const buildStyledMarkup = (markup, cssText) => {
   if (!cssText) {
@@ -209,41 +204,6 @@ const svgToImage = async (svgMarkup) => {
   });
 };
 
-const loadExternalCssText = async (cssUrls) => {
-  if (cssUrls.length === 0) {
-    return { cssText: "", failedUrls: [] };
-  }
-
-  const results = await Promise.all(
-    cssUrls.map(async (url) => {
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        return {
-          ok: true,
-          url,
-          text: await response.text()
-        };
-      } catch (error) {
-        console.error(`Failed to load CSS: ${url}`, error);
-        return {
-          ok: false,
-          url,
-          text: ""
-        };
-      }
-    })
-  );
-
-  return {
-    cssText: results.filter((result) => result.ok).map((result) => result.text).join("\n"),
-    failedUrls: results.filter((result) => !result.ok).map((result) => result.url)
-  };
-};
-
 const measureMarkupHeight = async (markup, width, background) => {
   measureSurface.style.width = `${width}px`;
   measureSurface.style.background = background;
@@ -273,7 +233,7 @@ async function renderHtmlToImage() {
   const markup = htmlInput.value.trim();
   const width = Number(widthInput.value);
   const background = backgroundInput.value.trim() || "transparent";
-  const cssUrls = getCssUrls();
+  const cssText = getCssText();
 
   if (!markup) {
     setStatus("HTML を入力してください", true);
@@ -290,7 +250,6 @@ async function renderHtmlToImage() {
   setStatus("更新中...");
 
   try {
-    const { cssText, failedUrls } = await loadExternalCssText(cssUrls);
     const styledMarkup = buildStyledMarkup(markup, cssText);
     const height = await measureMarkupHeight(styledMarkup, width, background);
     updateHtmlPreview(styledMarkup, width, height, background);
@@ -338,16 +297,11 @@ async function renderHtmlToImage() {
 
     latestPngUrl = URL.createObjectURL(pngBlob);
     lastRenderedSize = { width, height };
-    lastResolvedCssText = cssText;
     pngOutput.src = latestPngUrl;
     downloadLink.href = latestPngUrl;
     downloadLink.download = getDownloadFileName();
     downloadButton.disabled = false;
-    if (failedUrls.length > 0) {
-      setStatus(`更新完了: ${width}x${height} / CSS 読み込み失敗: ${failedUrls.join(", ")}`, true);
-    } else {
-      setStatus(`更新完了: ${width}x${height}`);
-    }
+    setStatus(`更新完了: ${width}x${height}`);
   } catch (error) {
     console.error(error);
     if (error instanceof DOMException && error.name === "SecurityError") {
@@ -387,7 +341,7 @@ window.addEventListener("resize", () => {
 
   if (Number.isFinite(width) && width > 0 && lastRenderedSize.height > 0) {
     updateHtmlPreview(
-      buildStyledMarkup(htmlInput.value, lastResolvedCssText),
+      buildStyledMarkup(htmlInput.value, getCssText()),
       width,
       lastRenderedSize.height,
       background
