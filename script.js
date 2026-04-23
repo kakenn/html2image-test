@@ -1,7 +1,6 @@
 const sampleSelect = document.getElementById("sampleSelect");
 const htmlInput = document.getElementById("htmlInput");
 const widthInput = document.getElementById("widthInput");
-const heightInput = document.getElementById("heightInput");
 const backgroundInput = document.getElementById("backgroundInput");
 const renderButton = document.getElementById("renderButton");
 const sampleButton = document.getElementById("sampleButton");
@@ -12,19 +11,21 @@ const pngOutput = document.getElementById("pngOutput");
 const downloadLink = document.getElementById("downloadLink");
 const htmlPreview = document.getElementById("htmlPreview");
 const htmlPreviewShell = document.getElementById("htmlPreviewShell");
+const measureSurface = document.getElementById("measureSurface");
 
 let latestPngUrl = "";
+let lastRenderedSize = { width: 0, height: 0 };
 
 const sampleDefinitions = {
-  simple: `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f766e 0%,#f59e0b 100%);color:white;font-family:'Hiragino Sans','Yu Gothic',sans-serif;">
+  simple: `<div style="width:100%;min-height:630px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f766e 0%,#f59e0b 100%);color:white;font-family:'Hiragino Sans','Yu Gothic',sans-serif;">
   <div style="padding:36px 44px;border:1px solid rgba(255,255,255,.35);border-radius:28px;background:rgba(255,255,255,.12);box-shadow:0 18px 50px rgba(0,0,0,.18);text-align:center;">
     <div style="font-size:14px;letter-spacing:.24em;text-transform:uppercase;opacity:.85;">Client-side only</div>
     <h1 style="margin:12px 0 8px;font-size:44px;line-height:1;">HTML → Image</h1>
     <p style="margin:0;font-size:18px;opacity:.92;">HTML preview と image preview を並べて確認</p>
   </div>
 </div>`,
-  game_notice_stable: `<div style="width:100%;height:100%;padding:36px;background:linear-gradient(135deg,#111827 0%,#1d4ed8 55%,#0f766e 100%);color:#fff;font-family:'Hiragino Sans','Yu Gothic',sans-serif;">
-  <div style="height:100%;padding:34px;border-radius:30px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);box-shadow:0 20px 50px rgba(0,0,0,.22);">
+  game_notice_stable: `<div style="width:100%;min-height:630px;padding:36px;background:linear-gradient(135deg,#111827 0%,#1d4ed8 55%,#0f766e 100%);color:#fff;font-family:'Hiragino Sans','Yu Gothic',sans-serif;box-sizing:border-box;">
+  <div style="padding:34px;border-radius:30px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);box-shadow:0 20px 50px rgba(0,0,0,.22);">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;">
       <div>
         <div style="display:inline-block;padding:8px 14px;border-radius:999px;background:#f59e0b;color:#111827;font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;">
@@ -68,7 +69,7 @@ const sampleDefinitions = {
     </div>
   </div>
 </div>`,
-  game_notice_stress: `<div style="position:relative;width:100%;height:100%;overflow:hidden;background:
+  game_notice_stress: `<div style="position:relative;width:100%;min-height:630px;overflow:hidden;background:
 radial-gradient(circle at 20% 30%, rgba(59,130,246,.9), transparent 28%),
 radial-gradient(circle at 80% 20%, rgba(236,72,153,.85), transparent 24%),
 radial-gradient(circle at 60% 80%, rgba(34,197,94,.8), transparent 26%),
@@ -100,7 +101,7 @@ linear-gradient(135deg,#0f172a 0%,#111827 100%);font-family:'Hiragino Sans','Yu 
     </div>
   </div>
 </div>`,
-  news_article: `<article style="width:100%;height:100%;padding:44px;background:#f8fafc;color:#0f172a;font-family:'Hiragino Sans','Yu Gothic',sans-serif;box-sizing:border-box;">
+  news_article: `<article style="width:100%;padding:44px;background:#f8fafc;color:#0f172a;font-family:'Hiragino Sans','Yu Gothic',sans-serif;box-sizing:border-box;">
   <div style="max-width:920px;margin:0 auto;padding:40px 44px;background:#ffffff;border:1px solid rgba(15,23,42,.08);border-radius:28px;box-shadow:0 20px 44px rgba(15,23,42,.08);">
     <div style="display:inline-block;padding:7px 12px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;">
       News
@@ -146,10 +147,14 @@ const loadSelectedSample = () => {
 };
 
 const getDownloadFileName = () => {
-  const width = Number(widthInput.value) || 0;
-  const height = Number(heightInput.value) || 0;
+  const { width, height } = lastRenderedSize;
   return `html-image-${width}x${height}.png`;
 };
+
+const nextFrame = () =>
+  new Promise((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
 
 const escapeXml = (value) =>
   value
@@ -181,6 +186,16 @@ const svgToImage = async (svgMarkup) => {
   });
 };
 
+const measureMarkupHeight = async (markup, width, background) => {
+  measureSurface.style.width = `${width}px`;
+  measureSurface.style.background = background;
+  measureSurface.innerHTML = markup;
+  await nextFrame();
+  const measuredHeight = Math.ceil(measureSurface.getBoundingClientRect().height);
+  measureSurface.innerHTML = "";
+  return Math.max(measuredHeight, 1);
+};
+
 const updateHtmlPreview = (markup, width, height, background) => {
   htmlPreviewShell.style.width = `${width}px`;
   htmlPreviewShell.style.height = `${height}px`;
@@ -200,7 +215,6 @@ const updateHtmlPreview = (markup, width, height, background) => {
 async function renderHtmlToImage() {
   const markup = htmlInput.value.trim();
   const width = Number(widthInput.value);
-  const height = Number(heightInput.value);
   const background = backgroundInput.value.trim() || "transparent";
 
   if (!markup) {
@@ -208,8 +222,8 @@ async function renderHtmlToImage() {
     return;
   }
 
-  if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1) {
-    setStatus("width / height は 1 以上の数値にしてください", true);
+  if (!Number.isFinite(width) || width < 1) {
+    setStatus("width は 1 以上の数値にしてください", true);
     return;
   }
 
@@ -218,6 +232,7 @@ async function renderHtmlToImage() {
   setStatus("更新中...");
 
   try {
+    const height = await measureMarkupHeight(markup, width, background);
     updateHtmlPreview(markup, width, height, background);
 
     const svgMarkup = [
@@ -262,6 +277,7 @@ async function renderHtmlToImage() {
     });
 
     latestPngUrl = URL.createObjectURL(pngBlob);
+    lastRenderedSize = { width, height };
     pngOutput.src = latestPngUrl;
     downloadLink.href = latestPngUrl;
     downloadLink.download = getDownloadFileName();
@@ -302,11 +318,10 @@ downloadButton.addEventListener("click", () => {
 
 window.addEventListener("resize", () => {
   const width = Number(widthInput.value);
-  const height = Number(heightInput.value);
   const background = backgroundInput.value.trim() || "transparent";
 
-  if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
-    updateHtmlPreview(htmlInput.value, width, height, background);
+  if (Number.isFinite(width) && width > 0 && lastRenderedSize.height > 0) {
+    updateHtmlPreview(htmlInput.value, width, lastRenderedSize.height, background);
   }
 });
 

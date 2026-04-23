@@ -96,7 +96,7 @@
 
     .row {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
     }
 
@@ -205,6 +205,19 @@
       pointer-events: none;
     }
 
+    .measure-root {
+      position: absolute;
+      left: -99999px;
+      top: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .measure-surface {
+      display: block;
+      overflow: visible;
+    }
+
     @media (max-width: 900px) {
       .row,
       .preview-grid {
@@ -247,10 +260,6 @@
           Width
           <input id="widthInput" type="number" min="1" value="1200">
         </label>
-        <label for="heightInput">
-          Height
-          <input id="heightInput" type="number" min="1" value="630">
-        </label>
         <label for="backgroundInput">
           Background
           <input id="backgroundInput" type="text" value="#ffffff">
@@ -287,6 +296,9 @@
 
   <canvas id="previewCanvas" class="hidden-canvas" width="1200" height="630"></canvas>
   <a id="downloadLink" hidden>download</a>
+  <div class="measure-root" aria-hidden="true">
+    <div id="measureSurface" class="measure-surface"></div>
+  </div>
 
   <script src="./script.js"></script>
 </body>
