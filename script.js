@@ -20,6 +20,12 @@ const setStatus = (message, isError = false) => {
   status.classList.toggle("error", isError);
 };
 
+const getDownloadFileName = () => {
+  const width = Number(widthInput.value) || 0;
+  const height = Number(heightInput.value) || 0;
+  return `html-image-${width}x${height}.png`;
+};
+
 const escapeXml = (value) =>
   value
     .replace(/&/g, "&amp;")
@@ -133,6 +139,7 @@ async function renderHtmlToImage() {
     latestPngUrl = URL.createObjectURL(pngBlob);
     pngOutput.src = latestPngUrl;
     downloadLink.href = latestPngUrl;
+    downloadLink.download = getDownloadFileName();
     downloadButton.disabled = false;
     setStatus(`更新完了: ${width}x${height}`);
   } catch (error) {
@@ -158,6 +165,7 @@ sampleButton.addEventListener("click", () => {
 
 downloadButton.addEventListener("click", () => {
   if (latestPngUrl) {
+    downloadLink.download = getDownloadFileName();
     downloadLink.click();
   }
 });

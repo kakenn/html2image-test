@@ -152,6 +152,8 @@
     }
 
     .preview-stage {
+      display: flex;
+      align-items: flex-start;
       border: 1px solid var(--border);
       border-radius: 14px;
       padding: 12px;
@@ -190,6 +192,7 @@
 
     .image-output {
       object-fit: contain;
+      vertical-align: top;
     }
 
     .hidden-canvas {
@@ -271,7 +274,7 @@
   </main>
 
   <canvas id="previewCanvas" class="hidden-canvas" width="1200" height="630"></canvas>
-  <a id="downloadLink" download="html-image.png" hidden>download</a>
+  <a id="downloadLink" hidden>download</a>
 
   <script src="./script.js"></script>
 </body>
